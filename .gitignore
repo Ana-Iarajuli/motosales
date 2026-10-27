@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
 
-# Scraped data — regenerated on start / by `npm run scrape`
+# Scraped data — regenerated on start / by `npm run scrape` / by the Netlify build
+public/data/
 data/
 
 # Secrets (APIFY_TOKEN etc.)

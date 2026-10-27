@@ -1,0 +1,14 @@
+# Netlify serves the site statically: the build scrapes all stores into
+# public/data/products.json, and public/ is published as-is.
+[build]
+  command = "npm run build"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Always revalidate the deal data so visitors get the latest build's prices.
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

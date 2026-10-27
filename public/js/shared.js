@@ -21,8 +21,9 @@ const storage = {
 };
 
 export async function loadData() {
-  const res = await fetch('/api/products');
-  if (res.status === 503) return null;
+  const res = await fetch('data/products.json', { cache: 'no-cache' });
+  if (res.status === 503) return null; // local server is still scraping
+  if (res.status === 404) throw new Error('No deal data has been generated yet. Run `npm run scrape` (or check the deploy build log).');
   if (!res.ok) throw new Error(`Could not load deals (HTTP ${res.status})`);
   const data = await res.json();
 

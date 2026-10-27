@@ -8,10 +8,20 @@ Requires Node.js 18+ (no `npm install` needed — there are no dependencies).
 
 ```sh
 npm start            # http://localhost:3000
-npm run scrape       # refresh data/products.json manually
+npm run scrape       # refresh public/data/products.json manually
 ```
 
 On start, the server scrapes all stores if the data is missing or older than 6 hours, and then re-scrapes every 6 hours.
+
+## Deploy (Netlify)
+
+The site also runs as plain static files. `netlify.toml` makes each Netlify build run the scraper (`npm run build`) and publish `public/`. There is no server; the frontend loads `data/products.json`.
+
+1. Connect the GitHub repo in Netlify. Build settings come from `netlify.toml`.
+2. Optional: add `APIFY_TOKEN` (and the other env vars below) under Site configuration → Environment variables.
+3. Keep deals fresh: Netlify only builds on push, so `.github/workflows/refresh-deals.yml` triggers a rebuild every 6 hours. Create a build hook (Site configuration → Build & deploy → Build hooks) and save its URL as the GitHub repository secret `NETLIFY_BUILD_HOOK`.
+
+Each build downloads the previous `data/products.json` from the live site. Stores that fail during a build keep their last results, and the paid Apify source still refreshes only once a day.
 
 | Env var | Default | Purpose |
 |---|---|---|
@@ -20,6 +30,7 @@ On start, the server scrapes all stores if the data is missing or older than 6 h
 | `APIFY_TOKEN` | — | Enables RevZilla via the Apify actor `parseforge/revzilla-scraper` (paid) |
 | `APIFY_MAX_ITEMS` | `200` | Max RevZilla items per Apify run (cost cap) |
 | `APIFY_REFRESH_HOURS` | `24` | Minimum time between Apify runs |
+| `PREVIOUS_DATA_URL` | `$URL/data/products.json` on Netlify | Where a fresh build fetches the last run's data |
 | `REVZILLA_QUERY` | empty | Search term passed to the Apify actor |
 
 ## Stores
@@ -50,8 +61,8 @@ If a store fails during a refresh, its products from the previous run are kept a
 ## Layout
 
 ```
-server.js                 static server + /api/products, scheduled refresh
-scraper/index.js          runs all sources, normalizes, writes data/products.json
+server.js                 local server (gzip data, scheduled refresh); not used on Netlify
+scraper/index.js          runs all sources, normalizes, writes public/data/products.json
 scraper/sources.js        the store list
 scraper/adapters/         shopify, fcmoto, dainese, apify, jsonld (fallback)
 scraper/normalize.js      brand/category/gender/size detection, match keys

@@ -5,7 +5,29 @@ import { SOURCES } from './sources.js';
 import { normalizeBrand, brandFromTitle, classify, detectGender, normalizeSizes, matchKey } from './normalize.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const DATA_FILE = path.join(ROOT, 'data', 'products.json');
+// Lives in public/ so static hosts (Netlify) can serve it as-is.
+export const DATA_FILE = path.join(ROOT, 'public', 'data', 'products.json');
+
+/**
+ * Last run's data: the local file, or — on a fresh CI/Netlify build — the copy on the live
+ * site (Netlify sets URL during builds). Lets failed stores keep their last results and
+ * paid sources respect their refresh interval across builds.
+ */
+async function loadPrevious(log) {
+  try {
+    return JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
+  } catch {}
+  const site = process.env.PREVIOUS_DATA_URL || (process.env.URL && `${process.env.URL}/data/products.json`);
+  if (!site) return null;
+  try {
+    const res = await fetch(site, { signal: AbortSignal.timeout(30000) });
+    if (res.ok) {
+      log(`  Loaded previous data from ${site}`);
+      return await res.json();
+    }
+  } catch {}
+  return null;
+}
 
 const FALLBACK_USD_PER_EUR = 1.08;
 
@@ -76,10 +98,7 @@ export async function runScrape({ log = console.log } = {}) {
   const { rates, live } = await fetchRates();
   if (!live) log(`  ! Exchange-rate API unavailable, using fallback EUR→USD ${FALLBACK_USD_PER_EUR}`);
 
-  let previous = null;
-  try {
-    previous = JSON.parse(await fs.readFile(DATA_FILE, 'utf8'));
-  } catch {}
+  const previous = await loadPrevious(log);
 
   const results = await Promise.all(
     SOURCES.map((s) => {

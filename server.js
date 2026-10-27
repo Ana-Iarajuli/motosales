@@ -46,7 +46,8 @@ function send(res, status, body, type = 'text/plain; charset=utf-8', extra = {})
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
-  if (url.pathname === '/api/products') {
+  // Same URL the static (Netlify) build serves; handled here to add gzip and a "still scraping" reply.
+  if (url.pathname === '/data/products.json') {
     if (!fs.existsSync(DATA_FILE)) {
       return send(res, 503, JSON.stringify({ error: 'Collecting deals, try again shortly', scraping: !!scraping }), MIME['.json']);
     }

@@ -1,0 +1,20 @@
+# Netlify only builds on push, so this triggers a rebuild (= fresh scrape) on a schedule.
+# Setup: Netlify → Site configuration → Build & deploy → Build hooks → "Add build hook",
+# then save its URL as the repository secret NETLIFY_BUILD_HOOK.
+name: Refresh deals
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # every 6 hours (UTC)
+  workflow_dispatch: # allows a manual run from the Actions tab
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Netlify build
+        env:
+          HOOK: ${{ secrets.NETLIFY_BUILD_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "NETLIFY_BUILD_HOOK secret is not set"; exit 1; fi
+          curl -fsS -X POST -d '{}' "$HOOK"
