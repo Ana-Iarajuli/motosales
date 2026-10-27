@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#03070b">
+  <script>try { document.documentElement.dataset.theme = localStorage.getItem('theme') || 'tron'; } catch { document.documentElement.dataset.theme = 'tron'; }</script>
+  <title>Deal details — MotoSales</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Exo+2:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="./"><svg class="logo-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 21a4 4 0 1 0 8 0 4 4 0 0 0-8 0m10 0a4 4 0 1 0 8 0 4 4 0 0 0-8 0M11 21l4-8h5l3 8m-8-8-1-3h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Moto<span>Sales</span></a>
+      <form class="header-search" action="./" role="search">
+        <input name="q" type="search" placeholder="Search helmets, jackets, brands…" aria-label="Search deals" autocomplete="off">
+      </form>
+      <label class="currency-switch">
+        <span class="sr-only">Currency</span>
+        <select id="currency"></select>
+      </label>
+      <div class="theme-picker">
+        <button type="button" class="theme-btn" id="theme-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Change theme"></button>
+        <div class="theme-menu" id="theme-menu" role="menu" hidden></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" id="product"></main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>MotoSales compares prices only — purchases happen on each store's own website. Prices and stock are checked periodically and may have changed; always confirm on the store's page.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/product.js"></script>
+</body>
+</html>
