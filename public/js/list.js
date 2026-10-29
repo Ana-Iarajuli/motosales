@@ -1,8 +1,11 @@
 import {
-  esc, safeUrl, loadData, setRates, getCurrency, toDisplay, mountCurrencySwitch, mountThemePicker, timeAgo, productCard, showMessage,
+  esc, safeUrl, loadData, setRates, getCurrency, toDisplay, mountCurrencySwitch, timeAgo, productCard, showMessage, catLabel, genderLabel,
 } from './shared.js';
+import { t } from './i18n.js';
+import { mountLayout } from './layout.js';
 
-mountThemePicker();
+mountLayout('sales');
+document.title = t('sales.pageTitle');
 
 const PAGE_SIZE = 48;
 const SIZE_ORDER = ['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
@@ -10,11 +13,11 @@ const GENDER_ORDER = ['Men', 'Women', 'Unisex', 'Kids'];
 
 // Facets: list-type filters, each reading one or more values from a product.
 const FACETS = {
-  store: { label: 'Store', get: (p) => [p.source] },
-  category: { label: 'Category', get: (p) => [p.category] },
-  brand: { label: 'Brand', get: (p) => [p.brand], searchable: true },
-  gender: { label: 'Gender', get: (p) => [p.gender], order: GENDER_ORDER },
-  size: { label: 'Size', get: (p) => p.sizeTags, order: SIZE_ORDER },
+  store: { get: (p) => [p.source] },
+  category: { get: (p) => [p.category] },
+  brand: { get: (p) => [p.brand], searchable: true },
+  gender: { get: (p) => [p.gender], order: GENDER_ORDER },
+  size: { get: (p) => p.sizeTags, order: SIZE_ORDER },
 };
 
 const DEFAULTS = { q: '', min: '', max: '', disc: 0, stock: false, coupon: false, best: true, sort: 'discount' };
@@ -107,7 +110,10 @@ function facetCounts(key) {
 }
 
 function facetLabel(key, value) {
-  return key === 'store' ? data.storeById[value]?.name ?? value : value;
+  if (key === 'store') return data.storeById[value]?.name ?? value;
+  if (key === 'category') return catLabel(value);
+  if (key === 'gender') return genderLabel(value);
+  return value;
 }
 
 function renderFacet(key) {
@@ -120,13 +126,13 @@ function renderFacet(key) {
   let searchBox = '';
   let moreButton = '';
   if (f.searchable) {
-    const t = brandSearch.text.toLowerCase();
-    if (t) entries = entries.filter(([v]) => v.toLowerCase().includes(t));
+    const needle = brandSearch.text.toLowerCase();
+    if (needle) entries = entries.filter(([v]) => v.toLowerCase().includes(needle));
     const total = entries.length;
-    if (!brandSearch.expanded && !t) entries = entries.filter(([v], i) => i < 10 || state[key].includes(v));
-    searchBox = `<input type="search" class="facet-search" data-facet-search placeholder="Find a brand…" value="${esc(brandSearch.text)}" aria-label="Find a brand">`;
-    if (total > 10 && !t) {
-      moreButton = `<button type="button" class="link-btn" data-toggle-brands>${brandSearch.expanded ? 'Show fewer' : `Show all ${total}`}</button>`;
+    if (!brandSearch.expanded && !needle) entries = entries.filter(([v], i) => i < 10 || state[key].includes(v));
+    searchBox = `<input type="search" class="facet-search" data-facet-search placeholder="${esc(t('filters.findBrand'))}" value="${esc(brandSearch.text)}" aria-label="${esc(t('filters.findBrand'))}">`;
+    if (total > 10 && !needle) {
+      moreButton = `<button type="button" class="link-btn" data-toggle-brands>${esc(brandSearch.expanded ? t('filters.fewer') : t('filters.all', { n: total }))}</button>`;
     }
   }
   if (key === 'size' && !entries.length) return '';
@@ -141,40 +147,40 @@ function renderFacet(key) {
     })
     .join('');
   const list = key === 'size' ? `<div class="size-grid">${opts}</div>` : `<div class="check-list">${opts}</div>`;
-  return section(key, f.label, searchBox + list + moreButton);
+  return section(key, t(`facet.${key}`), searchBox + list + moreButton);
 }
 
 // Remembers which filter sections the user collapsed, across re-renders.
 const collapsed = {};
 const section = (key, label, html) =>
-  `<details class="facet" data-key="${key}" ${collapsed[key] ? '' : 'open'}><summary>${label}</summary>${html}</details>`;
+  `<details class="facet" data-key="${key}" ${collapsed[key] ? '' : 'open'}><summary>${esc(label)}</summary>${html}</details>`;
 
 function renderFilters() {
   const focusedSearch = document.activeElement?.matches?.('[data-facet-search]');
   const cur = getCurrency();
   $('filter-body').innerHTML = `
     <div class="facet toggles">
-      <label class="switch"><input type="checkbox" id="f-best" ${state.best ? 'checked' : ''}><span>Best offer only</span>
-        <small>Hide pricier copies of the same item from other stores and colorways</small></label>
-      <label class="switch"><input type="checkbox" id="f-stock" ${state.stock ? 'checked' : ''}><span>In stock only</span></label>
-      <label class="switch"><input type="checkbox" id="f-coupon" ${state.coupon ? 'checked' : ''}><span>Has extra coupon code</span></label>
+      <label class="switch"><input type="checkbox" id="f-best" ${state.best ? 'checked' : ''}><span>${esc(t('filters.best'))}</span>
+        <small>${esc(t('filters.bestHint'))}</small></label>
+      <label class="switch"><input type="checkbox" id="f-stock" ${state.stock ? 'checked' : ''}><span>${esc(t('filters.stock'))}</span></label>
+      <label class="switch"><input type="checkbox" id="f-coupon" ${state.coupon ? 'checked' : ''}><span>${esc(t('filters.coupon'))}</span></label>
     </div>
     ${section(
       'disc',
-      'Discount',
+      t('filters.discount'),
       `<div class="pill-row">
         ${[0, 10, 20, 30, 40, 50, 70]
-          .map((d) => `<button type="button" class="pill ${state.disc === d ? 'on' : ''}" data-disc="${d}">${d ? `${d}%+` : 'Any'}</button>`)
+          .map((d) => `<button type="button" class="pill ${state.disc === d ? 'on' : ''}" data-disc="${d}">${d ? `${d}%+` : esc(t('filters.any'))}</button>`)
           .join('')}
       </div>`,
     )}
     ${section(
       'price',
-      `Price (${cur})`,
+      t('filters.price', { cur }),
       `<div class="price-inputs">
-        <input type="number" min="0" inputmode="decimal" id="f-min" placeholder="Min" value="${esc(state.min)}" aria-label="Minimum price">
+        <input type="number" min="0" inputmode="decimal" id="f-min" placeholder="${esc(t('filters.min'))}" value="${esc(state.min)}" aria-label="${esc(t('filters.minLabel'))}">
         <span>–</span>
-        <input type="number" min="0" inputmode="decimal" id="f-max" placeholder="Max" value="${esc(state.max)}" aria-label="Maximum price">
+        <input type="number" min="0" inputmode="decimal" id="f-max" placeholder="${esc(t('filters.max'))}" value="${esc(state.max)}" aria-label="${esc(t('filters.maxLabel'))}">
       </div>`,
     )}
     ${['category', 'store', 'brand', 'gender', 'size'].map(renderFacet).join('')}
@@ -190,10 +196,10 @@ function renderChips() {
   const chips = [];
   for (const k of Object.keys(FACETS)) for (const v of state[k]) chips.push([`${k}:${v}`, facetLabel(k, v)]);
   if (state.q) chips.push(['q', `“${state.q}”`]);
-  if (state.disc) chips.push(['disc', `${state.disc}%+ off`]);
+  if (state.disc) chips.push(['disc', t('chip.disc', { d: state.disc })]);
   if (state.min !== '' || state.max !== '') chips.push(['price', `${state.min || 0} – ${state.max || '∞'} ${getCurrency()}`]);
-  if (state.stock) chips.push(['stock', 'In stock']);
-  if (state.coupon) chips.push(['coupon', 'Coupon code']);
+  if (state.stock) chips.push(['stock', t('chip.stock')]);
+  if (state.coupon) chips.push(['coupon', t('chip.coupon')]);
   $('active-chips').innerHTML = chips
     .map(([id, label]) => `<button type="button" class="chip" data-chip="${esc(id)}">${esc(label)} <span aria-hidden="true">✕</span></button>`)
     .join('');
@@ -205,15 +211,15 @@ function renderResults() {
   if (state.best) list = bestOnly(list);
   list.sort(SORTS[state.sort] ?? SORTS.discount);
 
-  $('result-count').textContent = `${list.length.toLocaleString()} ${list.length === 1 ? 'deal' : 'deals'}`;
+  $('result-count').textContent = t('results.count', { n: list.length });
   if (!list.length) {
-    $('grid').innerHTML = `<div class="message"><h2>No deals match</h2><p>Try removing a filter or widening the price range.</p></div>`;
+    $('grid').innerHTML = `<div class="message"><h2>${esc(t('results.none'))}</h2><p>${esc(t('results.noneHint'))}</p></div>`;
     $('load-more').hidden = true;
     return;
   }
   $('grid').innerHTML = list.slice(0, shown).map((p) => productCard(p, data)).join('');
   $('load-more').hidden = list.length <= shown;
-  $('load-more').textContent = `Show more deals (${(list.length - shown).toLocaleString()} left)`;
+  $('load-more').textContent = t('results.more', { n: list.length - shown });
 }
 
 function render({ resetPage = true } = {}) {
@@ -230,14 +236,20 @@ function renderHeader() {
   const ok = data.sources.filter((s) => s.count > 0);
   const discounted = data.products.filter((p) => p.discountPct > 0);
   const topDisc = Math.max(0, ...discounted.map((p) => p.discountPct));
-  $('hero-stats').innerHTML = `<strong>${data.products.length.toLocaleString()}</strong> sale items from <strong>${ok.length}</strong> of ${data.sources.length} stores · up to <strong>${topDisc}% off</strong> · updated ${timeAgo(data.generatedAt)}`;
+  $('hero-stats').innerHTML = t('hero.stats', {
+    items: `<strong>${data.products.length.toLocaleString()}</strong>`,
+    ok: `<strong>${ok.length}</strong>`,
+    total: data.sources.length,
+    disc: `<strong>${topDisc}</strong>`,
+    ago: esc(timeAgo(data.generatedAt)),
+  });
   $('store-strip').innerHTML = data.sources
     .map((s) => {
       const live = s.count > 0;
-      const note = live ? `${s.count.toLocaleString()} items${s.stale ? ' · cached' : ''}` : s.status === 'blocked' ? 'not available — browse on site' : 'temporarily unavailable';
+      const note = live ? t('store.items', { n: s.count }) + (s.stale ? t('store.cached') : '') : t(s.status === 'blocked' ? 'store.blocked' : 'store.down');
       return `<a class="store-pill ${live ? '' : 'off'}" href="${esc(safeUrl(s.saleUrl))}" target="_blank" rel="noopener noreferrer nofollow"
-        title="${esc(live ? `Open ${s.name}'s sale page` : `We couldn't collect ${s.name}'s sale items automatically. Click to browse them on ${s.name}.`)}">
-        <span class="dot"></span>${esc(s.name)} <small>${note}</small> <span aria-hidden="true">↗</span></a>`;
+        title="${esc(t(live ? 'store.open' : 'store.blockedTitle', { store: s.name }))}">
+        <span class="dot"></span>${esc(s.name)} <small>${esc(note)}</small> <span aria-hidden="true">↗</span></a>`;
     })
     .join('');
 }
@@ -247,16 +259,16 @@ function renderHeader() {
 function bindEvents() {
   const body = $('filter-body');
   body.addEventListener('change', (e) => {
-    const t = e.target;
-    if (t.dataset.facet) {
-      const arr = state[t.dataset.facet];
-      if (t.checked) arr.push(t.value);
-      else arr.splice(arr.indexOf(t.value), 1);
-    } else if (t.id === 'f-best') state.best = t.checked;
-    else if (t.id === 'f-stock') state.stock = t.checked;
-    else if (t.id === 'f-coupon') state.coupon = t.checked;
-    else if (t.id === 'f-min') state.min = t.value;
-    else if (t.id === 'f-max') state.max = t.value;
+    const el = e.target;
+    if (el.dataset.facet) {
+      const arr = state[el.dataset.facet];
+      if (el.checked) arr.push(el.value);
+      else arr.splice(arr.indexOf(el.value), 1);
+    } else if (el.id === 'f-best') state.best = el.checked;
+    else if (el.id === 'f-stock') state.stock = el.checked;
+    else if (el.id === 'f-coupon') state.coupon = el.checked;
+    else if (el.id === 'f-min') state.min = el.value;
+    else if (el.id === 'f-max') state.max = el.value;
     else return;
     render();
   });
@@ -341,12 +353,12 @@ async function boot() {
   try {
     data = await loadData();
   } catch (e) {
-    showMessage($('grid'), 'Could not load deals', e.message);
+    showMessage($('grid'), t('results.error'), e.message);
     return;
   }
   if (!data) {
-    $('hero-stats').textContent = 'Collecting the latest deals from all stores — this takes about a minute on first start…';
-    showMessage($('grid'), 'Gathering deals…', 'This page will refresh automatically.');
+    $('hero-stats').textContent = t('hero.collecting');
+    showMessage($('grid'), t('results.gathering'), t('results.autoRefresh'));
     setTimeout(boot, 10000);
     return;
   }

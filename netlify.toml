@@ -1,14 +1,26 @@
 # Netlify serves the site statically: the build scrapes all stores into
-# public/data/products.json, and public/ is published as-is.
+# public/data/products.json, writes public/config.json (account settings), and
+# publishes public/ as-is. /api/login is the one server-side piece (netlify/functions/).
 [build]
   command = "npm run build"
   publish = "public"
 
 [build.environment]
   NODE_VERSION = "20"
+  # These two end up in public/config.json on purpose (they are public by design),
+  # so Netlify's secret scanning must not fail the build over them.
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY"
+
+[functions]
+  directory = "netlify/functions"
 
 # Always revalidate the deal data so visitors get the latest build's prices.
 [[headers]]
   for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/config.json"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"

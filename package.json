@@ -1,7 +1,7 @@
 {
-  "name": "motosales",
+  "name": "saferide",
   "version": "1.0.0",
-  "description": "Compare motorcycle gear sales across online stores",
+  "description": "SafeRide — motorcycle gear deals, guides and community for riders in Georgia",
   "type": "module",
   "private": true,
   "engines": {
@@ -10,6 +10,6 @@
   "scripts": {
     "start": "node server.js",
     "scrape": "node scraper/index.js",
-    "build": "node scraper/index.js"
+    "build": "node scripts/write-config.js && node scraper/index.js"
   }
 }

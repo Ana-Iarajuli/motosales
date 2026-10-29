@@ -1,4 +1,6 @@
-// Data loading, currency formatting and small helpers shared by both pages.
+// Data loading, currency formatting and small helpers shared by the deal pages.
+
+import { t, tv } from './i18n.js';
 
 export const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -77,74 +79,22 @@ export function mountCurrencySwitch(onChange) {
   });
 }
 
-// ---- theme ----------------------------------------------------------------
-// The saved theme is applied by an inline script in each page's <head> (avoids a flash);
-// this wires up the picker button.
-
-const THEMES = [
-  { id: 'tron', name: 'Tron · Cyan', colors: ['#00eaff', '#03070b'], bar: '#03070b' },
-  { id: 'tron-orange', name: 'Tron · Orange', colors: ['#ff8a1a', '#080402'], bar: '#080402' },
-  { id: 'classic', name: 'Classic', colors: ['#e4572e', '#f6f5f2'], bar: '#141416' },
-];
-
-const swatch = (t) => `<span class="swatch" style="--a:${t.colors[0]};--b:${t.colors[1]}"></span>`;
-
-export function mountThemePicker() {
-  const btn = document.getElementById('theme-btn');
-  const menu = document.getElementById('theme-menu');
-  if (!btn || !menu) return;
-
-  const apply = (id) => {
-    const theme = THEMES.find((t) => t.id === id) ?? THEMES[0];
-    document.documentElement.dataset.theme = theme.id;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.bar);
-    btn.innerHTML = swatch(theme);
-    btn.title = `Theme: ${theme.name}`;
-    menu.querySelectorAll('[data-theme-id]').forEach((o) => o.setAttribute('aria-checked', o.dataset.themeId === theme.id));
-  };
-  const open = (on) => {
-    menu.hidden = !on;
-    btn.setAttribute('aria-expanded', on);
-  };
-
-  menu.innerHTML =
-    '<h3>Theme</h3>' +
-    THEMES.map((t) => `<button type="button" class="theme-option" role="menuitemradio" data-theme-id="${t.id}">${swatch(t)}${esc(t.name)}</button>`).join('');
-  apply(document.documentElement.dataset.theme);
-
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    open(menu.hidden);
-  });
-  menu.addEventListener('click', (e) => {
-    const id = e.target.closest('[data-theme-id]')?.dataset.themeId;
-    if (!id) return;
-    apply(id);
-    storage.set('theme', id);
-    open(false);
-    btn.focus();
-  });
-  document.addEventListener('click', (e) => {
-    if (!menu.hidden && !menu.contains(e.target)) open(false);
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !menu.hidden) {
-      open(false);
-      btn.focus();
-    }
-  });
-}
-
 // ---- misc -----------------------------------------------------------------
 
 export function timeAgo(iso) {
   const mins = Math.round((Date.now() - new Date(iso)) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t('time.now');
+  if (mins < 60) return t('time.min', { n: mins });
   const h = Math.round(mins / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.round(h / 24)} days ago`;
+  if (h < 48) return t('time.hours', { n: h });
+  return t('time.days', { n: Math.round(h / 24) });
 }
+
+/** Price HTML, with "from" wording when the store lists a price range. */
+export const priceHtml = (p, html) => (p.priceFrom ? t('price.from', { price: html }) : html);
+
+export const catLabel = (c) => tv('cat', c);
+export const genderLabel = (g) => tv('gender', g);
 
 export function productCard(p, data) {
   const store = data.storeById[p.source];
@@ -152,19 +102,19 @@ export function productCard(p, data) {
   return `
     <a class="card" href="product.html?id=${encodeURIComponent(p.id)}">
       <div class="card-img">
-        ${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="no-img">No image</div>'}
+        ${img ? `<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<div class="no-img">${esc(t('card.noImage'))}</div>`}
         ${p.discountPct > 0 ? `<span class="badge-disc">−${p.discountPct}%</span>` : ''}
       </div>
       <div class="card-body">
         <div class="card-top"><span class="store-tag">${esc(store?.name ?? p.source)}</span><span class="brand">${esc(p.brand)}</span></div>
         <h3 class="card-title">${esc(p.title)}</h3>
         <div class="price-row">
-          <span class="price">${p.priceFrom ? '<small>from</small> ' : ''}${moneyUSD(p.priceUSD)}</span>
+          <span class="price">${priceHtml(p, moneyUSD(p.priceUSD))}</span>
           ${p.compareAtUSD ? `<s class="was">${moneyUSD(p.compareAtUSD)}</s>` : ''}
         </div>
         ${
           p.storeCount > 1
-            ? `<div class="compare-note ${p.isBest ? 'best' : ''}">${p.isBest ? '★ Best price · ' : ''}${p.storeCount} stores compared</div>`
+            ? `<div class="compare-note ${p.isBest ? 'best' : ''}">${p.isBest ? esc(t('card.best')) : ''}${esc(t('card.stores', { n: p.storeCount }))}</div>`
             : ''
         }
       </div>

@@ -3,11 +3,13 @@ node_modules/
 
 # Scraped data — regenerated on start / by `npm run scrape` / by the Netlify build
 public/data/
+public/config.json
 data/
 
 # Secrets (APIFY_TOKEN etc.)
 .env
 .env.*
+!.env.example
 
 # Logs and temp files
 *.log

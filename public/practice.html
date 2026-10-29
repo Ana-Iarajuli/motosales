@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#03070b">
+  <script>
+    try {
+      document.documentElement.dataset.theme = localStorage.getItem('theme') || 'tron';
+      document.documentElement.lang = localStorage.getItem('lang') || (/^ka/i.test(navigator.language) ? 'ka' : 'en');
+    } catch (e) {
+      document.documentElement.dataset.theme = 'tron';
+    }
+  </script>
+  <title data-i18n="practice.title">SafeRide</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Exo+2:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Georgian:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="practice">
+  <header class="site-header">
+    <div class="header-inner">
+      <button type="button" class="icon-btn nav-toggle" id="nav-toggle" aria-controls="sidebar" aria-expanded="false" aria-label="Open menu" data-i18n-aria-label="nav.open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <a class="logo" href="./" aria-label="SafeRide"><svg class="logo-icon" viewBox="0 0 100 70" fill="none" aria-hidden="true"><line class="logo-slash" x1="82" y1="10" x2="16" y2="62" stroke="currentColor" stroke-width="1.2"/><g transform="translate(49 36) rotate(33.7) scale(0.84)" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M41 -7 L23 -21 L8 -18 C2 -17 -2 -13 -8 -12 L-24 -14 L-36 -17" stroke-width="2.4"/><path d="M37 -3 L22 -6 L6 4 L-14 4 L-21 -5" stroke-width="2"/><path d="M29 -13 L11 -11 L-3 -3" stroke-width="2.8"/><path d="M30 0 L25 -13 M-30 0 L-13 2" stroke-width="1.8"/><circle cx="-30" cy="0" r="11" stroke-width="2.8"/><circle cx="-30" cy="0" r="4.5" stroke-width="1.4"/><circle cx="30" cy="0" r="11" stroke-width="2.8"/><circle cx="30" cy="0" r="4.5" stroke-width="1.4"/></g></svg><span class="logo-word">Safe<span>Ride</span></span></a>
+      <div class="header-tools">
+        <div class="dropdown" id="lang-picker"></div>
+        <div class="dropdown" id="theme-picker"></div>
+        <div class="dropdown" id="user-menu"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="page">
+      <main class="wrap soon-page" id="page"></main>
+
+      <footer class="site-footer">
+        <div class="wrap">
+          <p data-i18n="footer.tagline">SafeRide — gear, skills and community for riders in Georgia.</p>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script type="module" src="js/page.js"></script>
+</body>
+</html>

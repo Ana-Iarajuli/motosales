@@ -3,9 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
-import { runScrape, DATA_FILE } from './scraper/index.js';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+loadEnvFile(path.join(ROOT, '.env'));
+
+// imported after .env is loaded, since they read process.env
+const { runScrape, DATA_FILE } = await import('./scraper/index.js');
+const { publicConfig } = await import('./scripts/write-config.js');
+const { default: login } = await import('./netlify/functions/login.mjs');
+
 const PUBLIC = path.join(ROOT, 'public');
 const PORT = Number(process.env.PORT) || 3000;
 const REFRESH_HOURS = Number(process.env.REFRESH_HOURS) || 6;
@@ -19,6 +25,32 @@ const MIME = {
   '.png': 'image/png',
   '.ico': 'image/x-icon',
 };
+
+/** Minimal .env support (KEY=value lines) so local runs see the same settings as Netlify. */
+function loadEnvFile(file) {
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^(["'])(.*)\1$/, '$2');
+  }
+}
+
+/** Runs a Netlify Function handler (Request -> Response) for a Node request. */
+async function runFunction(handler, req, res) {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  const request = new Request(new URL(req.url, 'http://localhost'), {
+    method: req.method,
+    headers: req.headers,
+    body: ['GET', 'HEAD'].includes(req.method) ? undefined : Buffer.concat(chunks),
+  });
+  const response = await handler(request).catch((e) => {
+    console.error('[api]', e);
+    return new Response(JSON.stringify({ error: 'server_error' }), { status: 500 });
+  });
+  res.writeHead(response.status, Object.fromEntries(response.headers));
+  res.end(Buffer.from(await response.arrayBuffer()));
+}
 
 let scraping = null;
 function refresh() {
@@ -46,6 +78,10 @@ function send(res, status, body, type = 'text/plain; charset=utf-8', extra = {})
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
+  // On Netlify these come from the build output (config.json) and a function (/api/login).
+  if (url.pathname === '/config.json') return send(res, 200, JSON.stringify(publicConfig()), MIME['.json'], { 'cache-control': 'no-cache' });
+  if (url.pathname === '/api/login') return runFunction(login, req, res);
+
   // Same URL the static (Netlify) build serves; handled here to add gzip and a "still scraping" reply.
   if (url.pathname === '/data/products.json') {
     if (!fs.existsSync(DATA_FILE)) {
@@ -68,7 +104,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`MotoSales running at http://localhost:${PORT}`);
+  console.log(`SafeRide running at http://localhost:${PORT}${process.env.SUPABASE_URL ? '' : ' (accounts off: SUPABASE_URL not set in .env)'}`);
   if (dataAgeHours() > REFRESH_HOURS) refresh();
   setInterval(refresh, REFRESH_HOURS * 36e5).unref();
 });
